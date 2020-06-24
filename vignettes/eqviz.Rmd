@@ -1,0 +1,152 @@
+---
+title: "eqviz"
+author: "Min Park"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{eqviz}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This vignette brieftly walks through how to use the package `eqviz` to clean and visualize NOAA earthquake data with different charting options. The dataset can be found here: https://www.ngdc.noaa.gov/nndc/struts/form?t=101650&s=1&d=1
+
+The package has been designed in three sections
+* Cleaning the data
+* Charting the earthquakes data into a timeline using geom_timeline and geom_timeline_label geom_functions
+* Visualizing location information using interactive Leaflet.
+
+```{r setup}
+library(eqviz)
+```
+
+## Cleaning the data
+
+The cleaning part is composed of four functions including helper functions.
+
+
+### eq_load_data
+
+This is where raw data is gathered. To make use of the file structure, `readr::read_delimit()` function is used internally. For easier processing, column names and types are defined in this function. As a result, `dataframe` object is to be returned.
+
+### helper_neg_dates
+
+This helper function is made to support `eq_clean_data` function. My modularizing pre-processing of BC dates, `eq_clean_data` can simply the process. In R, intrinsic functions of packages including `lubridate` cannot process BC dates, so workaround is needed. Given chracter-type BC dates,this function mirrors BC date from the AD0 origin date and obtains expected datetime object of BC date.
+
+```{r bc_dates}
+neg_dates = helper_neg_dates('-2015-01-01')
+neg_dates
+class(neg_dates)
+```
+
+### eq_location_clean
+
+This function shortens the name of the `location` by removing the `country` part of the `data`. Given a column to work with, this returns a modified dataset column. The process is basically done by two phases. Firstly, the name of the country and surrounding `:` symbol is removed using regular expressions. Next, the remaining location data is titlized. 
+
+```{r location_clean}
+dataset = data.frame(location_name = c("Japan: Tokyo",
+                                       "China: Beijing",
+                                       "US: California: San Francisco"))
+dataset$locationname = eq_location_clean(dataset$location_name)
+dataset
+```
+
+### eq_clean_data
+
+This function finalizes the housekeeeping process of dataset including conversion of data types, creating new columns, and limitng the dataset only to necessary attributes. Specifically, `date` column is created combining `year`, `month`, and `day` columns. `latitude` and `longitude` columns are converted to numeric types for further use in leaflet. Finally, `id, year, data, country, location_name, longitude, latitude, deaths, total_deaths, eq_primary` are columns remaining by the end of the process. The modified dataset is returned as a result. 
+
+```{r data_clean}
+dataset = data.frame(id = c(1,10,5,250,3),
+                     location_name = c("Peru: Lima", 
+                                       "Mexico: Mexico City",
+                                       "CUBA: HABANA",
+                                       "SRI LANKA: IslanD",
+                                       "US: Maine"),
+                     country = c("Peru",
+                                 "Mexico",
+                                 "CUBA",
+                                 "SRI LANKA",
+                                 "US"),
+                     year = c(1950,1999,-320,1569,1850),
+                     month= c(5,3,NA,11,5),
+                     day = c(28,17,NA,4,2),
+                     hour = c(12,6,NA,2,5),
+                     latitude= c(-12.5,20.2,34.1,8.567,46.975),
+                     longitude = c(-77,-103.5,-75.5,81.233,-66.659),
+                     deaths = c(NA,1,2,8,NA),
+                     total_deaths = c(NA,1,NA,9,NA),
+                     eq_primary = c(7.5,3.4,2.9,7.9,5.5)
+                     )
+dataset = eq_clean_data(dataset)
+dataset$location_name = eq_location_clean(dataset$location_name)
+dataset
+```
+
+
+## Visualzing on a timeline (GeomTimeline and GeomTimelineLabel)
+
+The part explains newly created geoms including GeomTimeline and GeomTimelineLabel which cooperatively display earthquakes data on a timeline with location lables.
+
+
+### GeomTimeline
+
+`GeomTimeline` combines pointsGrob and polylineGrob to draw magnitudes of earthquakes on a timeline. The magnitude can be represented by the size of circle and the casulaty is by the darkness of the color.
+
+### geom_timeline
+
+`geom_timeline` layer function is the interface where users will supply data and aesthetics. Excluding dataset, only `x` axis value (`date`) is needed. Optionally, aesthetics include `y` axis value (`country`), `size`, `color`, `xmin` and `xmax` among others. When `xmin` and `xmax` values are not provided, the geom internally calcalates the range inferred from the data. Otherwise, the plot is limited to that range.
+
+```{r geom_timeline, fig.width = 7, fig.height=3}
+ggplot2::ggplot(data=dataset,ggplot2::aes(x=date,colour=deaths,size=eq_primary)) +
+  geom_timeline() +
+  ggplot2::scale_x_date(name='DATE') +
+  ggplot2::scale_size_continuous(name='Richter scale value') +
+  theme_eq_custom()
+```
+
+### GeomTimelineLabel
+
+`GeomTimeline` combines textGrob and polylineGrob to indicate the location info of specific time on the line. This is solely to supplement the function of `GeomTimeline`.
+
+### geom_timeline_label
+
+`geom_timeline_label` layer function is the interface where users will supply data and aesthetics. Excluding dataset, `x` axis value (`date`), `label` value (`location_name`), and `n_max` (maximum number of top earthquakes magnitudes) are needed. Optionally, aesthetics include `y` axis value (`country`), `size`, `color`, `xmin` and `xmax` among others. When `xmin` and `xmax` values are not provided, the geom internally calcalates the range inferred from the data. Otherwise, the plot is limited to that range. The same range of `xmin` and `xmax` should be provided to make the desired graphics.
+
+```{r geom_timeline_label, fig.width = 7, fig.height=3}
+ggplot2::ggplot(data=dataset,ggplot2::aes(x=date,colour=deaths,size=eq_primary)) +
+  geom_timeline() +
+  geom_timeline_label(ggplot2::aes(label=location_name,n_max=3)) +
+  ggplot2::scale_x_date(name='DATE') +
+  ggplot2::scale_size_continuous(name='Richter scale value') +
+  theme_eq_custom()
+```
+
+## Mapping the data (leaflet)
+
+To map the data on a map, `leaflet` library is used to create two following functions.
+
+### eq_map
+
+The function `eq_map` is capable of patching the location info on a map, with interactive popup infos. Depending on the choice of input, different infos are fetched to popup text.
+
+```{r eq_map, fig.width = 7, fig.height=3}
+dataset
+eq_map(dataset, annot_col='date')
+```
+
+### eq_create_label
+
+This helper function pre-processes popup text for leaflet popup text. Using html tags, three infos can be fetched including `Location`, `Magnitude`, and `Total deaths`. Actual columns used in the dataset are `location_name`, `eq_primary`, and `total_deaths`.
+
+```{r eq_create_label, fig.width = 7, fig.height=3}
+dataset$popup_text = eq_create_label(dataset)
+dataset
+eq_map(dataset, annot_col='popup_text')
+```
