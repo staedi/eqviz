@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/staedi/eqviz.svg?branch=master)](https://travis-ci.com/staedi/eqviz)
+
 # eqviz
 NOAA Earthquakes visualization (Coursera Mastering Software Development in R Capstone)
 
