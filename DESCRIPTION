@@ -7,7 +7,7 @@ Author: Min Park
 Maintainer: Min Park <staedi@gmail.com>
 Description: This package provides custom-built Geom elements which capture casualties of earthquakes on a timeline. Two Geom were developed, namely, GeomTimeline and GeomTimelineLabel, latter of which supplements the former by adding annotations.
     Additionally, for interactive mapping, leaflet object is provided as well, which summarizes cumulative casualties for locations. Relevant functions for gathering and cleaning dataset are added as well.
-License: GPL-2
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.0
