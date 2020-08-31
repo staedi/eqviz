@@ -5,7 +5,7 @@ NOAA Earthquakes visualization (Coursera Mastering Software Development in R Cap
 
 This package is built for Mastering Software Development in R Capstone course using [NOAA earthquakes data](https://www.ngdc.noaa.gov/nndc/struts/form?t=101650&s=1&d=1).
 
-The pacakge _eqviz_ has following functions for visualizations.
+The pacakge `eqviz` has following functions for visualizations.
 
 ### Data handling
 * eq_load_data: Load NOAA raw data into dataframe
